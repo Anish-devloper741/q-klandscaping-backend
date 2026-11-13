@@ -52,7 +52,12 @@ router.get("/stats", requireAuth, async (req, res) => {
     const last7Days = await Quote.countDocuments({
       createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
     });
-    res.json({ ok: true, total, last7Days, byStatus });
+    const services = await Quote.aggregate([
+  { $group: { _id: "$service", count: { $sum: 1 } } },
+  { $sort: { count: -1 } },
+]);
+const byService = services.map((r) => ({ service: r._id, count: r.count }));
+res.json({ ok: true, total, last7Days, byStatus, byService });
   } catch (err) {
     console.error(err);
     res.status(500).json({ ok: false, message: "Something went wrong" });
